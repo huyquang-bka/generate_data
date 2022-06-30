@@ -16,8 +16,9 @@ available_number = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 available_char = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
                   'U', 'V', 'W', 'X', 'Y', 'Z']
 
-available_template = ['NN-CN/NNNN', 'NN-CN/NNN.NN', 'NNC/NNN.NN', 'NNC/NNNN', 'NNC-NNNN', 'NNC-NNN.NN', 'NN-CC/NNN-NN',
-                      'NN-CC-NNN-NN', 'CC/NN-NN', 'CC-NN-NN']
+# available_template = ['NN-CN/NNNN', 'NN-CN/NNN.NN', 'NNC/NNN.NN', 'NNC/NNNN', 'NNC-NNNN', 'NNC-NNN.NN', 'NN-CC/NNN-NN',
+#                       'NN-CC-NNN-NN', 'CC/NN-NN', 'CC-NN-NN']
+available_template = ['NNC/NNNNN', 'NNC-NNNNN', 'NNC/NNNN', 'NNC-NNNN']
 available_square_bg = glob.glob('background/square*.jpg')
 available_rec_bg = glob.glob('background/rec*.jpg')
 
@@ -158,20 +159,9 @@ def generate_yolo_label_2(image, filename, idx_bg):
     with open(filename_txt, 'w+') as f:
         W, H = image.size
         center_x, center_y = W / 2, H / 2
+        if idx_bg in [0, 1]:
+            idx_bg = 1
         f.write(f"{idx_bg} {center_x / W} {center_y / H} {W / W} {H / H}")
-
-
-def visualize(img, boxes, label):
-    height, width, _ = img.shape
-    # print(boxes)
-    for i in range(len(label)):
-        x, y, w, h = boxes[i]
-        x, y, w, h = int(x * width), int(y * height), int(w * width), int(h * height)
-        cv2.rectangle(img, (int(x - w / 2), int(y - h / 2)), (int(x + w / 2), int(y + h / 2)), (0, 0, 255), 2)
-        cv2.putText(img, label[i], (x, y), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 2)
-    # cv2.imwrite('syn_labeled.jpg', img)
-    cv2.imshow('result', img)
-    cv2.waitKey(0)
 
 
 def gen(start=0):
@@ -183,9 +173,7 @@ def gen(start=0):
             filename = os.path.join(args.output_dir, 'syn_{}.jpg'.format(int(start) + i))
             idx = random.randint(0, total_template - 1)
             template = available_template[idx]
-            # print(idx)
-            # print(template)
-            sample = generate_sample(template)
+            sample = generate_sample(template) # gen digit
             (img, textsize), idx_bg = generate_plate(sample)
             # print(idx_bg)
             img = augmention(img)
@@ -193,13 +181,6 @@ def gen(start=0):
             boxes = segment_and_get_boxes(np.array(img), sample, textsize)
             generate_yolo_label_2(img, filename, idx_bg)
             img.save(filename)
-            # if len(boxes):
-            #     labels = sample.replace('-', '').replace('.', '').replace('/', '')
-            #     generate_yolo_label(boxes, labels, filename)
-            #     img.save(filename)
-            #     if visual:
-            #         visualize(np.array(img), boxes, labels)
-            # break
         except AssertionError:
             err += 1
 

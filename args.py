@@ -1,2 +1,2 @@
-numb = 500
+numb = 10
 output_dir = "valid"

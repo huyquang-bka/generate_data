@@ -1,0 +1,9 @@
+1. anh nen phai random 
+a. neu bat buoc la color -> random color
+b. neu khong bat buoc (img) -> random noise (color)
+
+2. blur
+
+3. resize smaller -> larger
+
+4. add random noise mask
