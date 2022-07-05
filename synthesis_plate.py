@@ -12,15 +12,27 @@ from aug import augmention
 import args
 from threading import Thread
 
+try:
+    os.mkdir(args.output_dir)
+except:
+    pass
+
+try:
+    os.mkdir(args.output_dir + "/images")
+    os.mkdir(args.output_dir + "/labels")
+except:
+    pass
+
 available_number = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 available_char = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
                   'U', 'V', 'W', 'X', 'Y', 'Z']
 
 # available_template = ['NN-CN/NNNN', 'NN-CN/NNN.NN', 'NNC/NNN.NN', 'NNC/NNNN', 'NNC-NNNN', 'NNC-NNN.NN', 'NN-CC/NNN-NN',
 #                       'NN-CC-NNN-NN', 'CC/NN-NN', 'CC-NN-NN']
-available_template = ['NNC/NNNNN', 'NNC-NNNNN', 'NNC/NNNN', 'NNC-NNNN']
-available_square_bg = glob.glob('background/square*.jpg')
-available_rec_bg = glob.glob('background/rec*.jpg')
+# available_template = ['NNC/NNNNN', 'NNC-NNNNN', 'NNC/NNNN', 'NNC-NNNN']
+available_template = ['NNC/NNNNN', 'NNC/NNNN', "NNCN/NNNN", "NNCN/NNNNN", "NNCC/NNNNN"]
+available_square_bg = sorted(glob.glob('background/square*.jpg'))
+available_rec_bg = sorted(glob.glob('background/rec*.jpg'))
 
 total_template = len(available_template)
 total_number = len(available_number)
@@ -34,13 +46,6 @@ for i in range(len(data)):
     box_label[data[i]] = i
 
 assert os.path.exists('classes.txt') == True, 'Not exists file classes.txt, try again !'
-
-
-def generate_boundingbox(sample, template, background, textsize, size=(480, 400), margin=10):
-    if '/' in template:
-        return generate_2lines_boundingbox(sample, template, background, textsize)
-    else:
-        return generate_1line_boundingbox(sample, template, background, textsize)
 
 
 def sort_boxes(boxes, max_distance=0.3):
@@ -133,6 +138,8 @@ def generate_plate(template):
     if '/' in template:
         idx = random.randint(0, len(available_square_bg) - 1)
         bg = available_square_bg[idx]
+        print(f"template: {template}, idx: {idx}, bg: {bg}")
+        print("*" * 20)
         return generate_2lines_images(template, bg), idx
     else:
         idx = random.randint(0, len(available_rec_bg) - 1)
@@ -153,34 +160,30 @@ def generate_yolo_label(boxes, sample_formated, filename):
             f.write('{} {} {} {} {}\n'.format(box_label[sample_formated[i]], x, y, w, h))
 
 
-def generate_yolo_label_2(image, filename, idx_bg):
-    filename_txt = filename.split('.')[0] + '.txt'
-    # Delete current label file
-    with open(filename_txt, 'w+') as f:
-        W, H = image.size
-        center_x, center_y = W / 2, H / 2
-        if idx_bg in [0, 1]:
-            idx_bg = 1
-        f.write(f"{idx_bg} {center_x / W} {center_y / H} {W / W} {H / H}")
+def generate_yolo_label_2(filename, idx_bg):
+    with open(filename, 'w+') as f:
+        if idx_bg != 0:
+            idx_bg -= 1
+        f.write(f"{idx_bg} 0.5 0.5 1.0 1.0")
 
 
 def gen(start=0):
-    if not os.path.exists(args.output_dir):
-        os.mkdir(args.output_dir)
     err = 0
     for i in tqdm(range(int(args.numb))):
         try:
-            filename = os.path.join(args.output_dir, 'syn_{}.jpg'.format(int(start) + i))
+            # filename = os.path.join(args.output_dir, 'syn_{}.jpg'.format(int(start) + i))
+            image_path = f"{args.output_dir}/images/{start + i}.jpg"
+            label_path = f"{args.output_dir}/labels/{start + i}.txt"
             idx = random.randint(0, total_template - 1)
             template = available_template[idx]
-            sample = generate_sample(template) # gen digit
+            sample = generate_sample(template)  # gen digit
             (img, textsize), idx_bg = generate_plate(sample)
-            # print(idx_bg)
+            print(idx_bg)
             img = augmention(img)
             width, height = img.size
             boxes = segment_and_get_boxes(np.array(img), sample, textsize)
-            generate_yolo_label_2(img, filename, idx_bg)
-            img.save(filename)
+            generate_yolo_label_2(label_path, idx_bg)
+            img.save(image_path)
         except AssertionError:
             err += 1
 

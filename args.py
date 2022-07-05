@@ -1,2 +1,2 @@
-numb = 10
-output_dir = "valid"
+numb = 1000
+output_dir = "train"

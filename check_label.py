@@ -1,7 +1,7 @@
 import os
 from tqdm import tqdm
 
-path = "valid"
+path = "train/labels"
 label_dict = {}
 for i in range(5):
     label_dict[str(i)] = 0
